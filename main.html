@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Price Tracker</title>
+    <style>
+        /* Add your CSS styles here */
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .coin-cards {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .coin-card {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 10px;
+            width: calc(33.33% - 20px);
+            box-sizing: border-box;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            background-color: #fff;
+            transition: transform 0.2s;
+        }
+
+        .coin-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .positive-change {
+            color: green;
+        }
+
+        .negative-change {
+            color: red;
+        }
+
+        /* Media query for mobile devices */
+        @media (max-width: 768px) {
+            .coin-card {
+                width: 100%; /* Display cards in a single column */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="coin-cards">
+        <!-- Coin cards will be dynamically added here -->
+    </div>
+
+    <script>
+        // Function to fetch the first 6 coin data from the API
+        async function fetchCoinData() {
+            try {
+                const response = await fetch('https://api.coinlore.net/api/tickers/');
+                const data = await response.json();
+                return data.data.slice(0, 6); // Get the first 6 coins
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        // Function to update the 24-hour change every hour
+        function update24HourChange() {
+            setInterval(() => {
+                fetchCoinData().then((coinData) => {
+                    coinData.forEach((coin) => {
+                        const card = document.getElementById(`coin-card-${coin.id}`);
+                        const change24h = card.querySelector('.change24h');
+
+                        const change24hValue = parseFloat(coin.percent_change_24h);
+
+                        change24h.innerHTML = `24hr Change: <span class="${change24hValue >= 0 ? 'positive-change' : 'negative-change'}">${change24hValue.toFixed(2)}%</span>`;
+                    });
+                });
+            }, 3600000); // Update every hour (3600000 milliseconds)
+        }
+
+        // Call the fetchCoinData function and handle the data
+        fetchCoinData()
+            .then((coinData) => {
+                const coinCardsContainer = document.querySelector('.coin-cards');
+
+                coinData.forEach((coin) => {
+                    const card = document.createElement('div');
+                    card.classList.add('coin-card');
+                    card.id = `coin-card-${coin.id}`;
+
+                    const coinName = document.createElement('h3');
+                    coinName.textContent = `${coin.name} (${coin.symbol})`;
+
+                    const change24h = document.createElement('p');
+                    change24h.classList.add('change24h');
+                    change24h.innerHTML = `24hr Change: <span class="${parseFloat(coin.percent_change_24h) >= 0 ? 'positive-change' : 'negative-change'}">${parseFloat(coin.percent_change_24h).toFixed(2)}%</span>`;
+
+                    const change1h = document.createElement('p');
+                    change1h.classList.add('change1h');
+                    change1h.innerHTML = `1hr Change: <span class="${parseFloat(coin.percent_change_1h) >= 0 ? 'positive-change' : 'negative-change'}">${parseFloat(coin.percent_change_1h).toFixed(2)}%</span>`;
+
+                    const marketCap = document.createElement('p');
+                    marketCap.textContent = `Market Cap: $${parseFloat(coin.market_cap_usd).toFixed(2)}`;
+
+                    card.appendChild(coinName);
+                    card.appendChild(change24h);
+                    card.appendChild(change1h);
+                    card.appendChild(marketCap);
+                    coinCardsContainer.appendChild(card);
+                });
+
+                // Start the update interval for 24-hour change
+                update24HourChange();
+            });
+    </script>
+</body>
+</html>
